@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 
 import shap
+from shap import Explanation
 from shap.plots._labels import labels
 from shap.plots._style import get_style
 from shap.plots._utils import format_value
