@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from .. import Explanation
-from ..utils import format_value
+from shap.explanation import Explanation
+from utils.format_value import format_value
 from ._labels import labels
 from ._style import get_style
 
