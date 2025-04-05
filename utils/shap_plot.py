@@ -1,3 +1,4 @@
+from utils._waterfall import waterfall  # ✅ 用你自己的 waterfall 替代 SHAP 的
 from matplotlib import rcParams
 import shap
 import matplotlib.pyplot as plt
@@ -54,7 +55,7 @@ def plot_shap_waterfall(pipeline_model, X_input, feature_names=None, debug=False
         shap.plots._utils.format_value = lambda x: f"{x:+.3f}"
         # ✅ 绘图
         plt.figure(figsize=(10, 6))
-        shap.plots.waterfall(explanation, max_display=5, show=False)
+        waterfall(explanation, max_display=5, show=False)
 
 
         plt.tight_layout()
