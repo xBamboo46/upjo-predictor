@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from shap.explanation import Explanation
+import shap
 from shap.plots._labels import labels
 from shap.plots._style import get_style
 from shap.plots._utils import format_value
@@ -13,7 +13,7 @@ def plot_custom_waterfall(shap_values: Explanation, max_display=10, show=True):
     if show is False:
         plt.ioff()
 
-    if not isinstance(shap_values, Explanation):
+    if not isinstance(shap_values, shap.Explanation):
         raise TypeError("The waterfall plot requires an `Explanation` object as the `shap_values` argument.")
 
     sv_shape = shap_values.shape
