@@ -1,15 +1,14 @@
 from PIL import Image
 Image.MAX_IMAGE_PIXELS = None  # ⚠️ 临时关闭限制，避免报错
+import shutil
+shutil.rmtree("/home/adminuser/.cache/matplotlib", ignore_errors=True)
+
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 # 设置全局字体配置
 mpl.rcParams['font.sans-serif'] = ['Noto Sans CJK SC']  # 简体中文
 mpl.rcParams['axes.unicode_minus'] = False  # 解决负号显示问题
-
-# 可选：强制重新生成字体缓存
-from matplotlib.font_manager import _rebuild
-_rebuild()  # 只在部署环境需要时使用
 
 
 import math
