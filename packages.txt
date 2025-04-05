@@ -1,5 +1,6 @@
 zlib1g-dev
 libjpeg-dev
 fonts-noto-cjk
+fonts-noto-core
 
 

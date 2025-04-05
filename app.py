@@ -1,5 +1,7 @@
-# app.py 顶部加入（或放到 __main__ 里运行一次）
-import refresh_fonts
+# app.py 头部添加
+import font_setup
+font_setup.init_fonts()
+
 
 from PIL import Image
 Image.MAX_IMAGE_PIXELS = None  # ⚠️ 临时关闭限制，避免报错
