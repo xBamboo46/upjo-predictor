@@ -1,4 +1,5 @@
 # app.py
+import os  # 新增这行
 import streamlit as st
 import matplotlib.pyplot as plt
 import matplotlib as mpl
