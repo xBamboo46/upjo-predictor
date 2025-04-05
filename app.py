@@ -1,7 +1,24 @@
-# app.py 头部添加
-import font_setup
-font_setup.init_fonts()
+# app.py
+import streamlit as st
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+import matplotlib.font_manager as fm  # 新增导入
 
+# ---------------------------- 调试代码开始 ----------------------------
+# 显示字体配置信息
+st.subheader("字体调试信息")
+
+# 1. 列出所有包含'CJK'的字体
+cjk_fonts = [f.name for f in fm.fontManager.ttflist if 'CJK' in f.name]
+st.write("🖋️ 已加载CJK字体:", cjk_fonts)
+
+# 2. 检查Noto字体文件是否存在
+noto_font_path = "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc"
+st.write("📁 字体文件存在:", os.path.exists(noto_font_path))
+
+# 3. 当前字体配置
+st.write("⚙️ 当前字体配置:", mpl.rcParams['font.sans-serif'])
+# ---------------------------- 调试代码结束 ----------------------------
 
 from PIL import Image
 Image.MAX_IMAGE_PIXELS = None  # ⚠️ 临时关闭限制，避免报错
