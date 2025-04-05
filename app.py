@@ -1,25 +1,112 @@
-# app.py
-import os  # 新增这行
+# -*- coding: utf-8 -*-
+# app.py 最顶部必须保持的配置
 import streamlit as st
-import matplotlib.pyplot as plt
+st.set_page_config(page_title="小儿UPJO预测平台", layout="wide")  # 必须作为第一个streamlit调用
+
+# ---------------------------- 标准库导入 ----------------------------
+import os
+import sys
+from pathlib import Path
+
+# ---------------------------- 数据科学库导入 ----------------------------
 import matplotlib as mpl
-import matplotlib.font_manager as fm  # 新增导入
+import matplotlib.font_manager as fm
+import matplotlib.pyplot as plt
 
-# ---------------------------- 调试代码开始 ----------------------------
-# 显示字体配置信息
-st.subheader("字体调试信息")
+# ---------------------------- 字体初始化模块 ----------------------------
+def init_fonts():
+    """初始化字体配置和缓存"""
+    try:
+        # 1. 设置缓存目录（解决部署环境权限问题）
+        cache_dir = Path("/tmp/mpl_cache")
+        cache_dir.mkdir(exist_ok=True, parents=True)
+        os.environ["MPLCONFIGDIR"] = str(cache_dir)
+        
+        # 2. 定义简体中文专用字体路径（Debian系统常见路径）
+        cjk_font_paths = [
+            "/usr/share/fonts/opentype/noto/NotoSansCJKsc-Regular.otf",  # 新路径
+            "/usr/share/fonts/truetype/noto-cjk/NotoSansSC-Regular.ttf",  # 备用路径
+            "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc"  # 旧路径
+        ]
+        
+        # 3. 动态加载可用字体
+        loaded_fonts = []
+        for font_path in cjk_font_paths:
+            if Path(font_path).exists():
+                fm.fontManager.addfont(font_path)
+                loaded_fonts.append(Path(font_path).name)
+        
+        # 4. 更新字体配置参数
+        mpl.rcParams['font.family'] = 'sans-serif'
+        mpl.rcParams['font.sans-serif'] = ['Noto Sans CJK SC', 'DejaVu Sans']
+        mpl.rcParams['axes.unicode_minus'] = False
+        
+        # 5. 强制刷新配置
+        plt.rcParams.update(mpl.rcParams)
+        from matplotlib import _pylab_helpers
+        _pylab_helpers.Gcf.destroy_all()
+        plt.close("all")
+        
+        return loaded_fonts
+        
+    except Exception as e:
+        st.error(f"字体初始化失败: {str(e)}")
+        return []
 
-# 1. 列出所有包含'CJK'的字体
-cjk_fonts = [f.name for f in fm.fontManager.ttflist if 'CJK' in f.name]
-st.write("🖋️ 已加载CJK字体:", cjk_fonts)
+# ---------------------------- 调试信息展示 ----------------------------
+def show_debug_info(loaded_fonts):
+    """显示字体调试信息"""
+    with st.expander("🛠️ 点击查看字体调试信息", expanded=False):
+        # 1. 系统路径验证
+        st.subheader("路径验证")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.write("**Python 版本:**", sys.version)
+            st.write("**Matplotlib 版本:**", mpl.__version__)
+        with col2:
+            st.write("**系统字体目录:**", [
+                p for p in [
+                    "/usr/share/fonts/opentype/noto",
+                    "/usr/share/fonts/truetype/noto-cjk"
+                ] if Path(p).exists()
+            ])
+        
+        # 2. 字体加载状态
+        st.subheader("字体状态")
+        if loaded_fonts:
+            st.success(f"✅ 成功加载字体文件: {loaded_fonts}")
+        else:
+            st.error("❌ 未检测到中文字体文件")
+        
+        # 3. 列出前20个可用字体
+        st.subheader("已注册字体样本")
+        all_fonts = [f.name for f in fm.fontManager.ttflist]
+        st.write(f"共检测到 {len(all_fonts)} 种字体，前20项：")
+        st.code("\n".join(sorted(all_fonts)[:20]))
+        
+        # 4. 生成测试图表
+        st.subheader("渲染测试")
+        try:
+            fig, ax = plt.subplots()
+            ax.plot([1, 2, 3], [4, 5, 6])
+            ax.set_title("中文测试标题", fontsize=16)
+            ax.set_xlabel("X轴标签")
+            ax.set_ylabel("Y轴标签")
+            st.pyplot(fig)
+        except Exception as e:
+            st.error(f"图表渲染失败: {str(e)}")
 
-# 2. 检查Noto字体文件是否存在
-noto_font_path = "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc"
-st.write("📁 字体文件存在:", os.path.exists(noto_font_path))
-
-# 3. 当前字体配置
-st.write("⚙️ 当前字体配置:", mpl.rcParams['font.sans-serif'])
+# ---------------------------- 主程序入口 ----------------------------
+if __name__ == "__main__":
+    # 初始化字体配置
+    loaded_fonts = init_fonts()
+    
+    # 显示调试信息（部署时可注释）
+    show_debug_info(loaded_fonts)
+    
 # ---------------------------- 调试代码结束 ----------------------------
+
+
 
 from PIL import Image
 Image.MAX_IMAGE_PIXELS = None  # ⚠️ 临时关闭限制，避免报错
