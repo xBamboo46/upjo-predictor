@@ -1,4 +1,5 @@
-from utils._waterfall import waterfall  # ✅ 用你自己的 waterfall 替代 SHAP 的
+from utils.custom_shap_waterfall import plot_custom_waterfall
+
 from matplotlib import rcParams
 import shap
 import matplotlib.pyplot as plt
@@ -6,6 +7,7 @@ import numpy as np
 import pandas as pd
 import joblib
 import os
+
 
 rcParams['font.family'] = 'Microsoft YaHei'
 rcParams['axes.unicode_minus'] = False
@@ -55,7 +57,8 @@ def plot_shap_waterfall(pipeline_model, X_input, feature_names=None, debug=False
         shap.plots._utils.format_value = lambda x: f"{x:+.3f}"
         # ✅ 绘图
         plt.figure(figsize=(10, 6))
-        waterfall(explanation, max_display=5, show=False)
+        fig = plot_custom_waterfall(explanation, max_display=5, show=False)
+
 
 
         plt.tight_layout()
