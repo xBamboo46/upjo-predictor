@@ -1,6 +1,6 @@
 from utils.custom_shap_waterfall import plot_custom_waterfall
 
-from matplotlib import rcParams
+ #from matplotlib import rcParams
 import shap
 import matplotlib.pyplot as plt
 import numpy as np
@@ -8,8 +8,21 @@ import pandas as pd
 import joblib
 import os
 
-rcParams['font.family'] = 'Noto Sans CJK SC'
+ #rcParams['font.family'] = 'Noto Sans CJK SC'
+ #rcParams['axes.unicode_minus'] = False
+
+import matplotlib.font_manager as fm
+from matplotlib import rcParams
+
+# 手动注册字体
+font_path = "fonts/NotoSerifCJKsc-Regular.otf"  # 字体文件路径
+font_prop = fm.FontProperties(fname=font_path)
+rcParams['font.family'] = font_prop.get_name()
+
+# 确保负号显示正常
 rcParams['axes.unicode_minus'] = False
+
+
 
 def plot_shap_waterfall(pipeline_model, X_input, feature_names=None, debug=False):
     try:
