@@ -120,10 +120,6 @@ if st.button("开始预测"):
     plt.tight_layout()
     st.pyplot(fig)
 
-
-   # 确保X_a和X_u是二维数组（即使只有一条数据）
-    X_a = pd.DataFrame([features_a], columns=feature_names)  # ✅ 正确：shape (1,3)
-    X_u = pd.DataFrame([features_u], columns=feature_names)  # ✅ 正确：shape (1,3)
     
     st.header("8. 模型解释 (SHAP Waterfall Plot)")
 
