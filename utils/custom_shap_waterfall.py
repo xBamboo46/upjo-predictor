@@ -1,3 +1,11 @@
+# 定义 format_value 函数
+def format_value(x, format_str="%0.03f"):
+    try:
+        return format_str % x
+    except:
+        return str(x)
+
+# 导入必要的库
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -7,21 +15,25 @@ import shap
 from shap import Explanation
 from shap.plots._labels import labels
 from shap.plots._style import get_style
-from shap.plots._utils import format_value
 
 def plot_custom_waterfall(shap_values: Explanation, max_display=10, show=True):
+    """自定义 SHAP Waterfall 图"""
+    
     style = get_style()
     if show is False:
         plt.ioff()
 
-    if not isinstance(shap_values, shap.Explanation):
-        raise TypeError("The waterfall plot requires an `Explanation` object as the `shap_values` argument.")
+    if not isinstance(shap_values, Explanation):
+        emsg = "The waterfall plot requires an `Explanation` object as the `shap_values` argument."
+        raise TypeError(emsg)
 
     sv_shape = shap_values.shape
     if len(sv_shape) != 1:
-        raise ValueError(
-            f"The waterfall plot can currently only plot a single explanation, but a matrix of explanations (shape {sv_shape}) was passed!"
+        emsg = (
+            "The waterfall plot can currently only plot a single explanation, but a "
+            f"matrix of explanations (shape {sv_shape}) was passed!"
         )
+        raise ValueError(emsg)
 
     base_values = float(shap_values.base_values)
     features = shap_values.display_data if shap_values.display_data is not None else shap_values.data
@@ -30,6 +42,7 @@ def plot_custom_waterfall(shap_values: Explanation, max_display=10, show=True):
     upper_bounds = getattr(shap_values, "upper_bounds", None)
     values = shap_values.values
 
+    # unwrap pandas series
     if isinstance(features, pd.Series):
         if feature_names is None:
             feature_names = list(features.index)
@@ -57,7 +70,10 @@ def plot_custom_waterfall(shap_values: Explanation, max_display=10, show=True):
 
     plt.gcf().set_size_inches(8, num_features * row_height + 1.5)
 
-    num_individual = num_features if num_features == len(values) else num_features - 1
+    if num_features == len(values):
+        num_individual = num_features
+    else:
+        num_individual = num_features - 1
 
     for i in range(num_individual):
         sval = values[order[i]]
@@ -76,6 +92,7 @@ def plot_custom_waterfall(shap_values: Explanation, max_display=10, show=True):
                 neg_low.append(lower_bounds[order[i]])
                 neg_high.append(upper_bounds[order[i]])
             neg_lefts.append(loc)
+
         if num_individual != num_features or i + 4 < num_individual:
             plt.plot(
                 [loc, loc],
@@ -146,29 +163,63 @@ def plot_custom_waterfall(shap_values: Explanation, max_display=10, show=True):
     for i in range(len(pos_inds)):
         dist = pos_widths[i]
         arrow_obj = plt.arrow(
-            pos_lefts[i], pos_inds[i], max(dist - hl_scaled, 0.000001), 0,
+            pos_lefts[i],
+            pos_inds[i],
+            max(dist - hl_scaled, 0.000001),
+            0,
             head_length=min(dist, hl_scaled),
             color=style.primary_color_positive,
-            width=bar_width, head_width=bar_width,
+            width=bar_width,
+            head_width=bar_width,
         )
+
+        if pos_low is not None and i < len(pos_low):
+            plt.errorbar(
+                pos_lefts[i] + pos_widths[i],
+                pos_inds[i],
+                xerr=np.array([[pos_widths[i] - pos_low[i]], [pos_high[i] - pos_widths[i]]]),
+                ecolor=style.secondary_color_positive,
+            )
+
         txt_obj = plt.text(
-            pos_lefts[i] + 0.5 * dist, pos_inds[i], f"{pos_widths[i]:+.3f}",
-            horizontalalignment="center", verticalalignment="center",
-            color=style.text_color, fontsize=12,
+            pos_lefts[i] + 0.5 * dist,
+            pos_inds[i],
+            f"{pos_widths[i]:+.3f}",
+            horizontalalignment="center",
+            verticalalignment="center",
+            color=style.text_color,
+            fontsize=12,
         )
 
     for i in range(len(neg_inds)):
         dist = neg_widths[i]
         arrow_obj = plt.arrow(
-            neg_lefts[i], neg_inds[i], -max(-dist - hl_scaled, 0.000001), 0,
+            neg_lefts[i],
+            neg_inds[i],
+            -max(-dist - hl_scaled, 0.000001),
+            0,
             head_length=min(-dist, hl_scaled),
             color=style.primary_color_negative,
-            width=bar_width, head_width=bar_width,
+            width=bar_width,
+            head_width=bar_width,
         )
+
+        if neg_low is not None and i < len(neg_low):
+            plt.errorbar(
+                neg_lefts[i] + neg_widths[i],
+                neg_inds[i],
+                xerr=np.array([[neg_widths[i] - neg_low[i]], [neg_high[i] - neg_widths[i]]]),
+                ecolor=style.secondary_color_negative,
+            )
+
         txt_obj = plt.text(
-            neg_lefts[i] + 0.5 * dist, neg_inds[i], f"{neg_widths[i]:+.3f}",
-            horizontalalignment="center", verticalalignment="center",
-            color=style.text_color, fontsize=12,
+            neg_lefts[i] + 0.5 * dist,
+            neg_inds[i],
+            f"{neg_widths[i]:+.3f}",
+            horizontalalignment="center",
+            verticalalignment="center",
+            color=style.text_color,
+            fontsize=12,
         )
 
     plt.yticks(
@@ -176,6 +227,7 @@ def plot_custom_waterfall(shap_values: Explanation, max_display=10, show=True):
         yticklabels[:-1] + [label.split("=")[-1] for label in yticklabels[:-1]],
         fontsize=13,
     )
+
     for i in range(num_features):
         plt.axhline(i, color=style.hlines_color, lw=0.5, dashes=(1, 5), zorder=-1)
 
@@ -194,20 +246,45 @@ def plot_custom_waterfall(shap_values: Explanation, max_display=10, show=True):
     ax2 = ax.twiny()
     ax2.set_xlim(xmin, xmax)
     ax2.set_xticks([base_values, base_values + 1e-8])
-    ax2.set_xticklabels(["\n$E[f(X)]$", "\n$ = " + format_value(base_values, "%0.03f") + "$"], fontsize=12, ha="left")
+    ax2.set_xticklabels(
+        ["\n$E[f(X)]$", "\n$ = " + format_value(base_values, "%0.03f") + "$"], fontsize=12, ha="left"
+    )
     ax2.spines["right"].set_visible(False)
     ax2.spines["top"].set_visible(False)
     ax2.spines["left"].set_visible(False)
 
     ax3 = ax2.twiny()
     ax3.set_xlim(xmin, xmax)
-    ax3.set_xticks([fx, fx + 1e-8])
+    ax3.set_xticks([base_values + values.sum(), base_values + values.sum() + 1e-8])
     ax3.set_xticklabels(["$f(x)$", "$ = " + format_value(fx, "%0.03f") + "$"], fontsize=12, ha="left")
+
+    tick_labels = ax3.xaxis.get_majorticklabels()
+    tick_labels[0].set_transform(
+        tick_labels[0].get_transform() + matplotlib.transforms.ScaledTranslation(-10 / 72.0, 0, fig.dpi_scale_trans)
+    )
+    tick_labels[1].set_transform(
+        tick_labels[1].get_transform() + matplotlib.transforms.ScaledTranslation(12 / 72.0, 0, fig.dpi_scale_trans)
+    )
+    tick_labels[1].set_color(style.tick_labels_color)
     ax3.spines["right"].set_visible(False)
     ax3.spines["top"].set_visible(False)
     ax3.spines["left"].set_visible(False)
 
+    tick_labels = ax2.xaxis.get_majorticklabels()
+    tick_labels[0].set_transform(
+        tick_labels[0].get_transform() + matplotlib.transforms.ScaledTranslation(-20 / 72.0, 0, fig.dpi_scale_trans)
+    )
+    tick_labels[1].set_transform(
+        tick_labels[1].get_transform()
+        + matplotlib.transforms.ScaledTranslation(22 / 72.0, -1 / 72.0, fig.dpi_scale_trans)
+    )
+    tick_labels[1].set_color(style.tick_labels_color)
+
+    tick_labels = ax.yaxis.get_majorticklabels()
+    for i in range(num_features):
+        tick_labels[i].set_color(style.tick_labels_color)
+
     if show:
         plt.show()
     else:
-        return plt.gca()
+        return plt.gcf()
