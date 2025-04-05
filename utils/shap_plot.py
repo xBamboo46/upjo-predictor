@@ -8,7 +8,7 @@ import pandas as pd
 import joblib
 import os
 
-rcParams['font.family'] = 'SimHei'  # ✅ 替代 Microsoft YaHei
+rcParams['font.family'] = 'Noto Sans CJK SC'
 rcParams['axes.unicode_minus'] = False
 
 def plot_shap_waterfall(pipeline_model, X_input, feature_names=None, debug=False):
@@ -67,6 +67,7 @@ def plot_shap_waterfall(pipeline_model, X_input, feature_names=None, debug=False
 
     except Exception as e:
         print(f"[SHAP Waterfall Error] {e}")
+        print(traceback.format_exc())  # ✅ 打印完整错误堆栈
         plt.close()
         return None
 
