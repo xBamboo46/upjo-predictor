@@ -8,8 +8,7 @@ import pandas as pd
 import joblib
 import os
 
-
-rcParams['font.family'] = 'Microsoft YaHei'
+rcParams['font.family'] = 'SimHei'  # ✅ 替代 Microsoft YaHei
 rcParams['axes.unicode_minus'] = False
 
 def plot_shap_waterfall(pipeline_model, X_input, feature_names=None, debug=False):
