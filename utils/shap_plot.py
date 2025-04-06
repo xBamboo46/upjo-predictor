@@ -1,4 +1,4 @@
-ffrom utils.custom_shap_waterfall import plot_custom_waterfall
+from utils.custom_shap_waterfall import plot_custom_waterfall
 import shap
 import matplotlib.pyplot as plt
 import numpy as np
