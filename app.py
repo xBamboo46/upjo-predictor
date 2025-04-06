@@ -24,14 +24,17 @@ from scipy.integrate import trapezoid
 from utils.shap_plot import plot_shap_waterfall
 
 
-import matplotlib.pyplot as plt
 from matplotlib import font_manager
+import matplotlib.pyplot as plt
 
-# ✅ 加载你自己的字体
 font_path = "fonts/NotoSansSC-VariableFont_wght.ttf"
 prop = font_manager.FontProperties(fname=font_path)
-plt.rcParams['font.family'] = prop.get_name()
-plt.rcParams['axes.unicode_minus'] = False  # 负号不乱码
+
+# 打印加载字体名确认
+print("✅ 加载字体名:", prop.get_name())
+
+plt.rcParams['font.family'] = prop.get_name()  # 使用你加载的字体
+plt.rcParams['axes.unicode_minus'] = False     # 负号正常显示
 
 
 

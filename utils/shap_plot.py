@@ -11,16 +11,18 @@ import os
  #rcParams['font.family'] = 'Noto Sans CJK SC'
  #rcParams['axes.unicode_minus'] = False
 
-
 from matplotlib import font_manager
 
-# ✅ 加载你自己的字体
-font_path = "fonts/NotoSansSC-VariableFont_wght.ttf"
-prop = font_manager.FontProperties(fname=font_path)
-plt.rcParams['font.family'] = prop.get_name()
-plt.rcParams['axes.unicode_minus'] = False  # 负号不乱码
-
-
+# ✅ 加载你自己的字体（防止路径错误 + 显示字体名称）
+font_path = os.path.join("fonts", "NotoSansSC-VariableFont_wght.ttf")
+if os.path.exists(font_path):
+    prop = font_manager.FontProperties(fname=font_path)
+    font_name = prop.get_name()
+    print(f"✅ 成功加载字体：{font_name}")
+    plt.rcParams['font.family'] = font_name
+    plt.rcParams['axes.unicode_minus'] = False
+else:
+    print("⚠️ 字体文件未找到，仍使用默认字体")
 
 
 def plot_shap_waterfall(pipeline_model, X_input, feature_names=None, debug=False):
