@@ -1,11 +1,9 @@
-# 定义 format_value 函数
 def format_value(x, format_str="%0.03f"):
     try:
         return format_str % x
     except:
         return str(x)
 
-# 导入必要的库
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -16,7 +14,6 @@ from shap import Explanation
 from shap.plots._labels import labels
 from shap.plots._style import get_style
 
-# ✅ 特征中英映射，仅用于图表展示，不影响模型
 feature_display_names = {
     "回缩速度": "Recoil Speed",
     "曲线面积": "Curve Area",
@@ -24,8 +21,6 @@ feature_display_names = {
 }
 
 def plot_custom_waterfall(shap_values: Explanation, max_display=10, show=True):
-    """Custom SHAP Waterfall plot with English display"""
-    
     style = get_style()
     if show is False:
         plt.ioff()
@@ -33,8 +28,7 @@ def plot_custom_waterfall(shap_values: Explanation, max_display=10, show=True):
     if not isinstance(shap_values, Explanation):
         raise TypeError("The waterfall plot requires an `Explanation` object.")
 
-    sv_shape = shap_values.shape
-    if len(sv_shape) != 1:
+    if len(shap_values.shape) != 1:
         raise ValueError("The waterfall plot only supports a single explanation.")
 
     base_values = float(shap_values.base_values)
@@ -44,7 +38,6 @@ def plot_custom_waterfall(shap_values: Explanation, max_display=10, show=True):
     upper_bounds = getattr(shap_values, "upper_bounds", None)
     values = shap_values.values
 
-    # unwrap pandas series
     if isinstance(features, pd.Series):
         if feature_names is None:
             feature_names = list(features.index)
@@ -84,7 +77,6 @@ def plot_custom_waterfall(shap_values: Explanation, max_display=10, show=True):
                 neg_high.append(upper_bounds[order[i]])
             neg_lefts.append(loc)
 
-        # ✅ 特征值显示为 英文名 = 值
         name_en = feature_display_names.get(feature_names[order[i]], feature_names[order[i]])
         val = features[order[i]]
         val_str = format_value(float(val), "%0.03f") if np.issubdtype(type(val), np.number) else str(val)
@@ -167,15 +159,26 @@ def plot_custom_waterfall(shap_values: Explanation, max_display=10, show=True):
                 xerr=np.array([[pos_widths[i] - pos_low[i]], [pos_high[i] - pos_widths[i]]]),
                 ecolor=style.secondary_color_positive,
             )
-        plt.text(
-            pos_lefts[i] + 0.5 * dist,
-            pos_inds[i],
-            f"{pos_widths[i]:+.3f}",
-            horizontalalignment="center",
-            verticalalignment="center",
-            color=style.text_color,
-            fontsize=12,
-        )
+
+        # ✅ 动态调整位置：短箭头显示在右边
+        if dist < 0.15 * dataw:
+            plt.text(
+                pos_lefts[i] + dist + 0.01 * dataw,
+                pos_inds[i],
+                f"{dist:+.3f}",
+                ha="left", va="center",
+                color=style.text_color,
+                fontsize=12,
+            )
+        else:
+            plt.text(
+                pos_lefts[i] + 0.5 * dist,
+                pos_inds[i],
+                f"{dist:+.3f}",
+                ha="center", va="center",
+                color=style.text_color,
+                fontsize=12,
+            )
 
     for i in range(len(neg_inds)):
         dist = neg_widths[i]
@@ -196,15 +199,26 @@ def plot_custom_waterfall(shap_values: Explanation, max_display=10, show=True):
                 xerr=np.array([[neg_widths[i] - neg_low[i]], [neg_high[i] - neg_widths[i]]]),
                 ecolor=style.secondary_color_negative,
             )
-        plt.text(
-            neg_lefts[i] + 0.5 * dist,
-            neg_inds[i],
-            f"{neg_widths[i]:+.3f}",
-            horizontalalignment="center",
-            verticalalignment="center",
-            color=style.text_color,
-            fontsize=12,
-        )
+
+        # ✅ 动态调整位置：短箭头显示在左边
+        if -dist < 0.15 * dataw:
+            plt.text(
+                neg_lefts[i] + dist - 0.01 * dataw,
+                neg_inds[i],
+                f"{dist:+.3f}",
+                ha="right", va="center",
+                color=style.text_color,
+                fontsize=12,
+            )
+        else:
+            plt.text(
+                neg_lefts[i] + 0.5 * dist,
+                neg_inds[i],
+                f"{dist:+.3f}",
+                ha="center", va="center",
+                color=style.text_color,
+                fontsize=12,
+            )
 
     plt.yticks(list(range(num_features)), yticklabels[:-1], fontsize=13)
     for i in range(num_features):
