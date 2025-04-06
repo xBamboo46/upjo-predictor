@@ -34,8 +34,8 @@ st.markdown(
 )
 
 st.title("Pediatric UPJO Surgery Prediction Platform")
-st.sidebar.markdown("🛠️ **Debug Tools**")
-debug_mode = st.sidebar.checkbox("Enable SHAP Debug Mode", value=False)
+# st.sidebar.markdown("🛠️ **Debug Tools**")
+# debug_mode = st.sidebar.checkbox("Enable SHAP Debug Mode", value=False)
 
 @st.cache_resource
 def load_model():
@@ -138,7 +138,8 @@ if st.button("Run Prediction"):
 
     st.header("7. Model Interpretation (SHAP Waterfall Plot)")
     st.subheader("Affected Kidney Waterfall Plot")
-    fig_wfa = plot_shap_waterfall(model, X_a, feature_names=feature_names, debug=debug_mode)
+    fig_wfa = plot_shap_waterfall(model, X_a, feature_names=feature_names, debug=False)
+
     if fig_wfa:
         try:
             st.pyplot(fig_wfa, clear_figure=True, use_container_width=True)
@@ -148,7 +149,8 @@ if st.button("Run Prediction"):
         st.warning("Failed to generate SHAP plot. Please check input data.")
 
     st.subheader("Unaffected Kidney Waterfall Plot")
-    fig_wfu = plot_shap_waterfall(model, X_u, feature_names=feature_names, debug=debug_mode)
+    fig_wfu = plot_shap_waterfall(model, X_u, feature_names=feature_names, debug=False)
+
     if fig_wfu:
         try:
             st.pyplot(fig_wfu, clear_figure=True, use_container_width=True)
