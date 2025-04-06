@@ -11,16 +11,15 @@ import os
  #rcParams['font.family'] = 'Noto Sans CJK SC'
  #rcParams['axes.unicode_minus'] = False
 
-import matplotlib.font_manager as fm
-from matplotlib import rcParams
 
-# 手动注册字体
-font_path = "fonts/NotoSerifCJKsc-Regular.otf"  # 字体文件路径
-font_prop = fm.FontProperties(fname=font_path)
-rcParams['font.family'] = font_prop.get_name()
+from matplotlib import font_manager
 
-# 确保负号显示正常
-rcParams['axes.unicode_minus'] = False
+# ✅ 加载你自己的字体
+font_path = "fonts/NotoSansSC-VariableFont_wght.ttf"
+prop = font_manager.FontProperties(fname=font_path)
+plt.rcParams['font.family'] = prop.get_name()
+plt.rcParams['axes.unicode_minus'] = False  # 负号不乱码
+
 
 
 
