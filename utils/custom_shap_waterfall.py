@@ -169,7 +169,9 @@ def plot_custom_waterfall(shap_values: Explanation, max_display=10, show=True):
                 ha="left", va="center",
                 color=style.text_color,
                 fontsize=12,
-            )
+                bbox=dict(boxstyle="round,pad=0.1", facecolor="white", edgecolor="none", alpha=0.8)
+    )
+
         else:
             plt.text(
                 pos_lefts[i] + 0.5 * dist,
@@ -209,7 +211,9 @@ def plot_custom_waterfall(shap_values: Explanation, max_display=10, show=True):
                 ha="right", va="center",
                 color=style.text_color,
                 fontsize=12,
-            )
+                bbox=dict(boxstyle="round,pad=0.1", facecolor="white", edgecolor="none", alpha=0.8)
+    )
+
         else:
             plt.text(
                 neg_lefts[i] + 0.5 * dist,
