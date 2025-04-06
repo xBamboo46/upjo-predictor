@@ -16,6 +16,7 @@ from utils.shap_plot import plot_shap_waterfall
 
 
 import matplotlib.pyplot as plt
+plt.rcParams['font.family'] = 'sans-serif'  # ✅ 强制用默认字体，避免找不到
 plt.rcParams['axes.unicode_minus'] = False
 
 st.set_page_config(page_title="Pediatric UPJO Prediction Platform", layout="wide")
