@@ -14,14 +14,8 @@ from scipy.interpolate import make_interp_spline
 from scipy.integrate import trapezoid
 from utils.shap_plot import plot_shap_waterfall
 
-from matplotlib import font_manager
+
 import matplotlib.pyplot as plt
-
-font_path = "fonts/NotoSansSC-VariableFont_wght.ttf"
-prop = font_manager.FontProperties(fname=font_path)
-print("✅ Font loaded:", prop.get_name())
-
-plt.rcParams['font.family'] = prop.get_name()
 plt.rcParams['axes.unicode_minus'] = False
 
 st.set_page_config(page_title="Pediatric UPJO Prediction Platform", layout="wide")
