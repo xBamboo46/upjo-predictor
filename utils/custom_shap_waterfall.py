@@ -16,24 +16,26 @@ from shap import Explanation
 from shap.plots._labels import labels
 from shap.plots._style import get_style
 
+# ✅ 特征中英映射，仅用于图表展示，不影响模型
+feature_display_names = {
+    "回缩速度": "Recoil Speed",
+    "曲线面积": "Curve Area",
+    "45min下降百分比": "45min Decline (%)"
+}
+
 def plot_custom_waterfall(shap_values: Explanation, max_display=10, show=True):
-    """自定义 SHAP Waterfall 图"""
+    """Custom SHAP Waterfall plot with English display"""
     
     style = get_style()
     if show is False:
         plt.ioff()
 
     if not isinstance(shap_values, Explanation):
-        emsg = "The waterfall plot requires an `Explanation` object as the `shap_values` argument."
-        raise TypeError(emsg)
+        raise TypeError("The waterfall plot requires an `Explanation` object.")
 
     sv_shape = shap_values.shape
     if len(sv_shape) != 1:
-        emsg = (
-            "The waterfall plot can currently only plot a single explanation, but a "
-            f"matrix of explanations (shape {sv_shape}) was passed!"
-        )
-        raise ValueError(emsg)
+        raise ValueError("The waterfall plot only supports a single explanation.")
 
     base_values = float(shap_values.base_values)
     features = shap_values.display_data if shap_values.display_data is not None else shap_values.data
@@ -55,25 +57,14 @@ def plot_custom_waterfall(shap_values: Explanation, max_display=10, show=True):
     row_height = 0.5
     rng = range(num_features - 1, -1, -1)
     order = np.argsort(-np.abs(values))
-    pos_lefts = []
-    pos_inds = []
-    pos_widths = []
-    pos_low = []
-    pos_high = []
-    neg_lefts = []
-    neg_inds = []
-    neg_widths = []
-    neg_low = []
-    neg_high = []
+    pos_lefts, pos_inds, pos_widths, pos_low, pos_high = [], [], [], [], []
+    neg_lefts, neg_inds, neg_widths, neg_low, neg_high = [], [], [], [], []
     loc = base_values + values.sum()
     yticklabels = ["" for _ in range(num_features + 1)]
 
     plt.gcf().set_size_inches(8, num_features * row_height + 1.5)
 
-    if num_features == len(values):
-        num_individual = num_features
-    else:
-        num_individual = num_features - 1
+    num_individual = num_features if num_features == len(values) else num_features - 1
 
     for i in range(num_individual):
         sval = values[order[i]]
@@ -93,6 +84,12 @@ def plot_custom_waterfall(shap_values: Explanation, max_display=10, show=True):
                 neg_high.append(upper_bounds[order[i]])
             neg_lefts.append(loc)
 
+        # ✅ 特征值显示为 英文名 = 值
+        name_en = feature_display_names.get(feature_names[order[i]], feature_names[order[i]])
+        val = features[order[i]]
+        val_str = format_value(float(val), "%0.03f") if np.issubdtype(type(val), np.number) else str(val)
+        yticklabels[rng[i]] = f"{name_en} = {val_str}"
+
         if num_individual != num_features or i + 4 < num_individual:
             plt.plot(
                 [loc, loc],
@@ -102,15 +99,6 @@ def plot_custom_waterfall(shap_values: Explanation, max_display=10, show=True):
                 linewidth=0.5,
                 zorder=-1,
             )
-        if features is None:
-            yticklabels[rng[i]] = feature_names[order[i]]
-        else:
-            if np.issubdtype(type(features[order[i]]), np.number):
-                yticklabels[rng[i]] = (
-                    format_value(float(features[order[i]]), "%0.03f") + " = " + feature_names[order[i]]
-                )
-            else:
-                yticklabels[rng[i]] = str(features[order[i]]) + " = " + str(feature_names[order[i]])
 
     if num_features < len(values):
         yticklabels[0] = f"{len(shap_values) - num_features + 1} other features"
@@ -162,7 +150,7 @@ def plot_custom_waterfall(shap_values: Explanation, max_display=10, show=True):
 
     for i in range(len(pos_inds)):
         dist = pos_widths[i]
-        arrow_obj = plt.arrow(
+        plt.arrow(
             pos_lefts[i],
             pos_inds[i],
             max(dist - hl_scaled, 0.000001),
@@ -172,7 +160,6 @@ def plot_custom_waterfall(shap_values: Explanation, max_display=10, show=True):
             width=bar_width,
             head_width=bar_width,
         )
-
         if pos_low is not None and i < len(pos_low):
             plt.errorbar(
                 pos_lefts[i] + pos_widths[i],
@@ -180,8 +167,7 @@ def plot_custom_waterfall(shap_values: Explanation, max_display=10, show=True):
                 xerr=np.array([[pos_widths[i] - pos_low[i]], [pos_high[i] - pos_widths[i]]]),
                 ecolor=style.secondary_color_positive,
             )
-
-        txt_obj = plt.text(
+        plt.text(
             pos_lefts[i] + 0.5 * dist,
             pos_inds[i],
             f"{pos_widths[i]:+.3f}",
@@ -193,7 +179,7 @@ def plot_custom_waterfall(shap_values: Explanation, max_display=10, show=True):
 
     for i in range(len(neg_inds)):
         dist = neg_widths[i]
-        arrow_obj = plt.arrow(
+        plt.arrow(
             neg_lefts[i],
             neg_inds[i],
             -max(-dist - hl_scaled, 0.000001),
@@ -203,7 +189,6 @@ def plot_custom_waterfall(shap_values: Explanation, max_display=10, show=True):
             width=bar_width,
             head_width=bar_width,
         )
-
         if neg_low is not None and i < len(neg_low):
             plt.errorbar(
                 neg_lefts[i] + neg_widths[i],
@@ -211,8 +196,7 @@ def plot_custom_waterfall(shap_values: Explanation, max_display=10, show=True):
                 xerr=np.array([[neg_widths[i] - neg_low[i]], [neg_high[i] - neg_widths[i]]]),
                 ecolor=style.secondary_color_negative,
             )
-
-        txt_obj = plt.text(
+        plt.text(
             neg_lefts[i] + 0.5 * dist,
             neg_inds[i],
             f"{neg_widths[i]:+.3f}",
@@ -222,12 +206,7 @@ def plot_custom_waterfall(shap_values: Explanation, max_display=10, show=True):
             fontsize=12,
         )
 
-    plt.yticks(
-        list(range(num_features)) * 2,
-        yticklabels[:-1] + [label.split("=")[-1] for label in yticklabels[:-1]],
-        fontsize=13,
-    )
-
+    plt.yticks(list(range(num_features)), yticklabels[:-1], fontsize=13)
     for i in range(num_features):
         plt.axhline(i, color=style.hlines_color, lw=0.5, dashes=(1, 5), zorder=-1)
 
@@ -246,43 +225,28 @@ def plot_custom_waterfall(shap_values: Explanation, max_display=10, show=True):
     ax2 = ax.twiny()
     ax2.set_xlim(xmin, xmax)
     ax2.set_xticks([base_values, base_values + 1e-8])
-    ax2.set_xticklabels(
-        ["\n$E[f(X)]$", "\n$ = " + format_value(base_values, "%0.03f") + "$"], fontsize=12, ha="left"
-    )
+    ax2.set_xticklabels(["\n$E[f(X)]$", "\n$ = " + format_value(base_values, "%0.03f") + "$"], fontsize=12, ha="left")
     ax2.spines["right"].set_visible(False)
     ax2.spines["top"].set_visible(False)
     ax2.spines["left"].set_visible(False)
 
     ax3 = ax2.twiny()
     ax3.set_xlim(xmin, xmax)
-    ax3.set_xticks([base_values + values.sum(), base_values + values.sum() + 1e-8])
+    ax3.set_xticks([fx, fx + 1e-8])
     ax3.set_xticklabels(["$f(x)$", "$ = " + format_value(fx, "%0.03f") + "$"], fontsize=12, ha="left")
 
     tick_labels = ax3.xaxis.get_majorticklabels()
-    tick_labels[0].set_transform(
-        tick_labels[0].get_transform() + matplotlib.transforms.ScaledTranslation(-10 / 72.0, 0, fig.dpi_scale_trans)
-    )
-    tick_labels[1].set_transform(
-        tick_labels[1].get_transform() + matplotlib.transforms.ScaledTranslation(12 / 72.0, 0, fig.dpi_scale_trans)
-    )
+    tick_labels[0].set_transform(tick_labels[0].get_transform() + matplotlib.transforms.ScaledTranslation(-10 / 72.0, 0, fig.dpi_scale_trans))
+    tick_labels[1].set_transform(tick_labels[1].get_transform() + matplotlib.transforms.ScaledTranslation(12 / 72.0, 0, fig.dpi_scale_trans))
     tick_labels[1].set_color(style.tick_labels_color)
-    ax3.spines["right"].set_visible(False)
-    ax3.spines["top"].set_visible(False)
-    ax3.spines["left"].set_visible(False)
 
     tick_labels = ax2.xaxis.get_majorticklabels()
-    tick_labels[0].set_transform(
-        tick_labels[0].get_transform() + matplotlib.transforms.ScaledTranslation(-20 / 72.0, 0, fig.dpi_scale_trans)
-    )
-    tick_labels[1].set_transform(
-        tick_labels[1].get_transform()
-        + matplotlib.transforms.ScaledTranslation(22 / 72.0, -1 / 72.0, fig.dpi_scale_trans)
-    )
+    tick_labels[0].set_transform(tick_labels[0].get_transform() + matplotlib.transforms.ScaledTranslation(-20 / 72.0, 0, fig.dpi_scale_trans))
+    tick_labels[1].set_transform(tick_labels[1].get_transform() + matplotlib.transforms.ScaledTranslation(22 / 72.0, -1 / 72.0, fig.dpi_scale_trans))
     tick_labels[1].set_color(style.tick_labels_color)
 
-    tick_labels = ax.yaxis.get_majorticklabels()
     for i in range(num_features):
-        tick_labels[i].set_color(style.tick_labels_color)
+        ax.yaxis.get_majorticklabels()[i].set_color(style.tick_labels_color)
 
     if show:
         plt.show()

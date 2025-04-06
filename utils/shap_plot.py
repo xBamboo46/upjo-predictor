@@ -1,33 +1,20 @@
-from utils.custom_shap_waterfall import plot_custom_waterfall
-
- #from matplotlib import rcParams
+ffrom utils.custom_shap_waterfall import plot_custom_waterfall
 import shap
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import joblib
-import os
+import traceback
 
- #rcParams['font.family'] = 'Noto Sans CJK SC'
- #rcParams['axes.unicode_minus'] = False
-
-from matplotlib import font_manager
-
-# ✅ 加载你自己的字体（防止路径错误 + 显示字体名称）
-font_path = os.path.join("fonts", "NotoSansSC-VariableFont_wght.ttf")
-if os.path.exists(font_path):
-    prop = font_manager.FontProperties(fname=font_path)
-    font_name = prop.get_name()
-    print(f"✅ 成功加载字体：{font_name}")
-    plt.rcParams['font.family'] = font_name
-    plt.rcParams['axes.unicode_minus'] = False
-else:
-    print("⚠️ 字体文件未找到，仍使用默认字体")
-
+# ✅ 显示英文特征名用（不影响模型）
+feature_display_names = {
+    "回缩速度": "Recoil Speed",
+    "曲线面积": "Curve Area",
+    "45min下降百分比": "45min Decline (%)"
+}
 
 def plot_shap_waterfall(pipeline_model, X_input, feature_names=None, debug=False):
     try:
-        # ✅ 使用传入的 pipeline_model
         scaler = pipeline_model.named_steps['scaler']
         model = pipeline_model.named_steps['svm']
 
@@ -40,40 +27,42 @@ def plot_shap_waterfall(pipeline_model, X_input, feature_names=None, debug=False
         X_scaled = scaler.transform(X_input_df)
         X_scaled_df = pd.DataFrame(X_scaled, columns=feature_names)
 
-        # ✅ 创建 explainer
+        # ✅ 创建 Explainer
         explainer = shap.LinearExplainer(model, background_scaled, feature_names=feature_names)
         shap_values = explainer.shap_values(X_scaled_df)
 
-    # ✅ ✅ ✅ 调试输出 SHAP 贡献值 + 特征值
+        # ✅ 调试打印信息（英文输出）
         if debug:
-            print("🔍 SHAP值详细贡献如下：")
+            print("🔍 SHAP Value Contributions:")
             for name, shap_val, raw_val in zip(feature_names, shap_values[0], X_input_df.values[0]):
-                print(f"  特征 {name:<10} | 输入值 = {raw_val:<8.3f} | SHAP值 = {shap_val:<+8.6f}")
+                print(f"  Feature: {name:<10} | Input = {raw_val:<8.3f} | SHAP = {shap_val:<+8.6f}")
 
+        # ✅ 格式化原始特征值用于展示（不影响模型）
         raw_values = []
         for name, val in zip(feature_names, X_input_df.values[0]):
             if name == "回缩速度":
-                raw_values.append(f"{int(val)}")  # 不保留小数
+                raw_values.append(f"{int(val)}")
             elif name in ["曲线面积", "45min下降百分比"]:
-                raw_values.append(f"{val:.2f}")  # 保留两位
+                raw_values.append(f"{val:.2f}")
             else:
-                raw_values.append(f"{val:.3f}")  # 默认
-        # ✅ 构建 Explanation
+                raw_values.append(f"{val:.3f}")
+
+        # ✅ 英文展示名（只用于 SHAP 图显示）
+        display_names = [feature_display_names.get(name, name) for name in feature_names]
+
         explanation = shap.Explanation(
             values=shap_values[0],
             base_values=explainer.expected_value,
-            data=raw_values, # ✅ 原始未标准化的特征值
-            feature_names=feature_names
+            data=raw_values,  # ✅ 原始未标准化的值
+            feature_names=display_names  # ✅ 显示用英文名
         )
 
-# ✅ 修改 SHAP 显示格式为三位小数（箭头中的值）
+        # ✅ 格式化箭头中的数值
         shap.plots._utils.format_value = lambda x: f"{x:+.3f}"
-        # ✅ 绘图
+
+        # ✅ 绘图并返回 Figure
         plt.figure(figsize=(10, 6))
         fig = plot_custom_waterfall(explanation, max_display=5, show=False)
-
-
-
         plt.tight_layout()
         fig = plt.gcf()
         plt.close()
@@ -81,9 +70,10 @@ def plot_shap_waterfall(pipeline_model, X_input, feature_names=None, debug=False
 
     except Exception as e:
         print(f"[SHAP Waterfall Error] {e}")
-        print(traceback.format_exc())  # ✅ 打印完整错误堆栈
+        print(traceback.format_exc())
         plt.close()
         return None
+
 
 
 

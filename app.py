@@ -1,18 +1,9 @@
 
 
-
 from PIL import Image
-Image.MAX_IMAGE_PIXELS = None  # ⚠️ 临时关闭限制，避免报错
+Image.MAX_IMAGE_PIXELS = None
 import shutil
 shutil.rmtree("/home/adminuser/.cache/matplotlib", ignore_errors=True)
-
-
-# import matplotlib as mpl
-# import matplotlib.pyplot as plt
-
-# 设置全局字体配置
-# mpl.rcParams['font.sans-serif'] = ['Noto Sans CJK SC']  # 简体中文
-# mpl.rcParams['axes.unicode_minus'] = False  # 解决负号显示问题
 
 import math
 import streamlit as st
@@ -23,36 +14,40 @@ from scipy.interpolate import make_interp_spline
 from scipy.integrate import trapezoid
 from utils.shap_plot import plot_shap_waterfall
 
-
 from matplotlib import font_manager
 import matplotlib.pyplot as plt
 
 font_path = "fonts/NotoSansSC-VariableFont_wght.ttf"
 prop = font_manager.FontProperties(fname=font_path)
+print("✅ Font loaded:", prop.get_name())
 
-# 打印加载字体名确认
-print("✅ 加载字体名:", prop.get_name())
+plt.rcParams['font.family'] = prop.get_name()
+plt.rcParams['axes.unicode_minus'] = False
 
-plt.rcParams['font.family'] = prop.get_name()  # 使用你加载的字体
-plt.rcParams['axes.unicode_minus'] = False     # 负号正常显示
+st.set_page_config(page_title="Pediatric UPJO Prediction Platform", layout="wide")
 
+# Apply English font site-wide
+st.markdown(
+    """
+    <style>
+    html, body, [class*="css"]  {
+        font-family: 'Noto Sans', 'Arial', sans-serif;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
+st.title("Pediatric UPJO Surgery Prediction Platform")
+st.sidebar.markdown("🛠️ **Debug Tools**")
+debug_mode = st.sidebar.checkbox("Enable SHAP Debug Mode", value=False)
 
-
-# 页面配置
-st.set_page_config(page_title="小儿UPJO预测平台", layout="wide")
-st.title("小儿UPJO手术需求预测平台")
-# 开关：是否启用调试模式
-st.sidebar.markdown("🛠️ **调试工具**")
-debug_mode = st.sidebar.checkbox("开启 SHAP 调试模式", value=False)
-# 载入模型
 @st.cache_resource
 def load_model():
     return joblib.load("model/svm_model.pkl")
 
 model = load_model()
 
-# 特征提取函数
 def extract_features(apd_values):
     time_points = np.array([0, 5, 15, 30, 45, 60])
     apd_values = np.array(apd_values)
@@ -66,66 +61,64 @@ def extract_features(apd_values):
     decline_ratio = (apd_max - apd_45) / (apd_max - apd_0) * 100 if (apd_max - apd_0) != 0 else 0
     return [area, decline_ratio], (dense_time, smooth_curve, apd_values)
 
-# 页面输入
-st.header("1. 输入患者信息")
+# Input Section
+st.header("1. Enter Patient Information")
 col1, col2, col3 = st.columns(3)
-name = col1.text_input("姓名")
-age = col2.number_input("年龄（岁）", 0, 18)
-gender = col3.radio("性别", ["男", "女"])
-side = st.radio("患侧", ["左", "右"])
+name = col1.text_input("Name")
+age = col2.number_input("Age (years)", 0, 18)
+gender_input = col3.radio("Gender", ["Male", "Female"])
+gender = {"Male": "男", "Female": "女"}[gender_input]
 
-st.header("2. 输入患肾APD（单位：cm）")
+side_input = st.radio("Affected Side", ["Left", "Right"])
+side = {"Left": "左", "Right": "右"}[side_input]
+
+st.header("2. Enter Affected Kidney APD (cm)")
 time_labels = ["0", "5", "15", "30", "45", "60"]
-affected = [st.number_input(f"患{t}min", key=f"a{t}", step=0.1, format="%.1f") for t in time_labels]
+affected = [st.number_input(f"Affected {t}min", key=f"a{t}", step=0.1, format="%.1f") for t in time_labels]
 
-st.header("3. 输入健肾APD（单位：cm）")
-unaffected = [st.number_input(f"健{t}min", key=f"u{t}", step=0.1, format="%.1f") for t in time_labels]
+st.header("3. Enter Unaffected Kidney APD (cm)")
+unaffected = [st.number_input(f"Unaffected {t}min", key=f"u{t}", step=0.1, format="%.1f") for t in time_labels]
 
-st.header("4. 输入回缩速度")
+st.header("4. Enter Recoil Speed")
 col1, col2 = st.columns(2)
-recoil_speed_a = col1.selectbox("患肾回缩速度", [1, 2, 3], key="rsa")
-recoil_speed_u = col2.selectbox("健肾回缩速度", [1, 2, 3], key="rsu")
+recoil_speed_a = col1.selectbox("Affected Kidney Recoil Speed", [1, 2, 3], key="rsa")
+recoil_speed_u = col2.selectbox("Unaffected Kidney Recoil Speed", [1, 2, 3], key="rsu")
 
-
-
-# 模型预测
-if st.button("开始预测"):
+if st.button("Run Prediction"):
     feature_names = ["回缩速度", "曲线面积", "45min下降百分比"]
-    # 提取患肾特征
     features_a, (t_dense_a, smooth_a, raw_a) = extract_features(affected)
     features_a = [recoil_speed_a] + features_a
     X_a = pd.DataFrame([features_a], columns=feature_names)
     y_pred_a = model.predict(X_a)[0]
     y_prob_a = model.predict_proba(X_a)[0, 1]
-    # 提取健肾特征
+
     features_u, (t_dense_u, smooth_u, raw_u) = extract_features(unaffected)
     features_u = [recoil_speed_u] + features_u
     X_u = pd.DataFrame([features_u], columns=feature_names)
     y_pred_u = model.predict(X_u)[0]
     y_prob_u = model.predict_proba(X_u)[0, 1]
 
-    st.header(" 模型输入特征")
-
+    st.header("Model Input Features")
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("#### 患肾特征")
-        st.markdown(f"- 回缩速度：**{features_a[0]}**")
-        st.markdown(f"- 曲线面积：**{features_a[1]:.2f}**")
-        st.markdown(f"- 45min下降百分比：**{features_a[2]:.2f}**")
+        st.markdown("#### Affected Kidney Features")
+        st.markdown(f"- Recoil Speed: **{features_a[0]}**")
+        st.markdown(f"- Curve Area: **{features_a[1]:.2f}**")
+        st.markdown(f"- 45min Decline: **{features_a[2]:.2f}%**")
 
     with col2:
-        st.markdown("#### 健肾特征")
-        st.markdown(f"- 回缩速度：**{features_u[0]}**")
-        st.markdown(f"- 曲线面积：**{features_u[1]:.2f}**")
-        st.markdown(f"- 45min下降百分比：**{features_u[2]:.2f}**")
+        st.markdown("#### Unaffected Kidney Features")
+        st.markdown(f"- Recoil Speed: **{features_u[0]}**")
+        st.markdown(f"- Curve Area: **{features_u[1]:.2f}**")
+        st.markdown(f"- 45min Decline: **{features_u[2]:.2f}%**")
 
-    st.header("5. 预测结果")
+    st.header("5. Prediction Results")
     col1, col2 = st.columns(2)
-    col1.success(f"患肾：{'需要手术' if y_pred_a==1 else '无需手术'}，概率：{y_prob_a:.2f}")
-    col2.success(f"健肾：{'需要手术' if y_pred_u==1 else '无需手术'}，概率：{y_prob_u:.2f}")
+    col1.success(f"Affected Kidney: {'Surgery Needed' if y_pred_a==1 else 'No Surgery Needed'}, Probability: {y_prob_a:.2f}")
+    col2.success(f"Unaffected Kidney: {'Surgery Needed' if y_pred_u==1 else 'No Surgery Needed'}, Probability: {y_prob_u:.2f}")
 
-    st.header("6. 双肾排泄曲线")
+    st.header("6. Bilateral Kidney Drainage Curves")
     fig, ax = plt.subplots(figsize=(6, 4), dpi=150)
     time_points = np.array([0, 5, 15, 30, 45, 60])
     affected_spline = make_interp_spline(time_points, raw_a, k=3)
@@ -134,8 +127,8 @@ if st.button("开始预测"):
     unaffected_dense = np.linspace(0, 60, 300)
     affected_smooth = affected_spline(affected_dense)
     unaffected_smooth = unaffected_spline(unaffected_dense)
-    ax.plot(affected_dense, affected_smooth, label='患肾', color='#800080')
-    ax.plot(unaffected_dense, unaffected_smooth, label='健肾', color='#FF8C00')
+    ax.plot(affected_dense, affected_smooth, label='Affected Kidney', color='#800080')
+    ax.plot(unaffected_dense, unaffected_smooth, label='Unaffected Kidney', color='#FF8C00')
     ax.scatter(time_points, raw_a, color='#800080', s=40)
     ax.scatter(time_points, raw_u, color='#FF8C00', s=40)
     ax.set_xlabel("Time (minutes)", fontsize=10)
@@ -148,30 +141,27 @@ if st.button("开始预测"):
     plt.tight_layout()
     st.pyplot(fig)
 
-    
-    st.header("8. 模型解释 (SHAP Waterfall Plot)")
-
-    st.subheader("患肾 Waterfall 图")
+    st.header("7. Model Interpretation (SHAP Waterfall Plot)")
+    st.subheader("Affected Kidney Waterfall Plot")
     fig_wfa = plot_shap_waterfall(model, X_a, feature_names=feature_names, debug=debug_mode)
-    # 修改模型解释部分的调用逻辑
     if fig_wfa:
         try:
-            st.pyplot(fig_wfa, clear_figure=True, use_container_width=True)  # 使用容器宽度自适应
+            st.pyplot(fig_wfa, clear_figure=True, use_container_width=True)
         except Exception as e:
-            st.error(f"图像渲染失败: {str(e)}")
+            st.error(f"Failed to render plot: {str(e)}")
     else:
-        st.warning("SHAP解释图生成失败，请检查输入数据格式。")
+        st.warning("Failed to generate SHAP plot. Please check input data.")
 
-    st.subheader("健肾 Waterfall 图")
+    st.subheader("Unaffected Kidney Waterfall Plot")
     fig_wfu = plot_shap_waterfall(model, X_u, feature_names=feature_names, debug=debug_mode)
-    # 修改模型解释部分的调用逻辑
     if fig_wfu:
         try:
-            st.pyplot(fig_wfu, clear_figure=True, use_container_width=True)  # 使用容器宽度自适应
+            st.pyplot(fig_wfu, clear_figure=True, use_container_width=True)
         except Exception as e:
-            st.error(f"图像渲染失败: {str(e)}")
+            st.error(f"Failed to render plot: {str(e)}")
     else:
-        st.warning("SHAP解释图生成失败，请检查输入数据格式。")
+        st.warning("Failed to generate SHAP plot. Please check input data.")
+
 
 
 
