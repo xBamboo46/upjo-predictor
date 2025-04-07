@@ -167,11 +167,9 @@ def plot_custom_waterfall(shap_values: Explanation, max_display=10, show=True):
                 pos_inds[i],
                 f"{dist:+.3f}",
                 ha="left", va="center",
-                color=style.text_color,
+                color=style.primary_color_positive,
                 fontsize=12,
-                bbox=dict(boxstyle="round,pad=0.1", facecolor="white", edgecolor="none", alpha=0.8)
-    )
-
+            )
         else:
             plt.text(
                 pos_lefts[i] + 0.5 * dist,
@@ -209,11 +207,9 @@ def plot_custom_waterfall(shap_values: Explanation, max_display=10, show=True):
                 neg_inds[i],
                 f"{dist:+.3f}",
                 ha="right", va="center",
-                color=style.text_color,
+                color=style.primary_color_negative,
                 fontsize=12,
-                bbox=dict(boxstyle="round,pad=0.1", facecolor="white", edgecolor="none", alpha=0.8)
-    )
-
+            )
         else:
             plt.text(
                 neg_lefts[i] + 0.5 * dist,
